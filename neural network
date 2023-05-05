@@ -1,0 +1,47 @@
+import openml
+from sklearn.model_selection import train_test_split
+import tensorflow as tf
+from sklearn.metrics import confusion_matrix
+import numpy as np
+
+
+# 1. Load the dataset
+dataset = openml.datasets.get_dataset(1498)
+X, y, categorical_indicator, attribute_names = dataset.get_data(
+    dataset_format="array",
+    target=dataset.default_target_attribute)
+
+# 2. Change the attribute names
+attribute_names = ['sbp', 'tobacco', 'ldl', 'adiposity', 'famhist', 'type', 'obesity', 'alcohol', 'age']
+dataset.target_attribute = "chd"
+
+# 3. Split the data into training and test sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# 4. Build the model
+model = tf.keras.Sequential([
+    tf.keras.layers.Dense(64, activation='relu', input_dim=X_train.shape[1]),
+    tf.keras.layers.Dense(32, activation='relu'),
+    tf.keras.layers.Dense(1, activation='sigmoid')
+])
+
+# Compile the model
+model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+
+# Train the model
+model.fit(X_train, y_train, epochs=50, batch_size=32, validation_data=(X_test, y_test))
+
+# 6. Using a confusion matrix, calculate the accuracy and precision of your neural network.
+y_pred = model.predict(X_test)
+y_pred = (y_pred > 0.5).astype(int)
+
+# Calculate the confusion matrix
+cm = confusion_matrix(y_test, y_pred)
+
+# Calculate accuracy and precision
+accuracy = (cm[0,0] + cm[1,1]) / np.sum(cm)
+precision = cm[1,1] / (cm[0,1] + cm[1,1])
+
+# Print the results
+print("Accuracy:", accuracy)
+print("Precision:", precision)
